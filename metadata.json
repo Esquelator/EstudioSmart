@@ -1,0 +1,6 @@
+{
+  "name": "EstudioSmart - Tutor de Estudio Interactivo",
+  "description": "Aprende cualquier tema fácil a partir de PDFs, fotos, apuntes o enlaces web, con resúmenes por analogías (fútbol, aviones y tus pasiones), ejercicios interactivos, voz y seguimiento diario de progreso.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

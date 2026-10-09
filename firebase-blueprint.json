@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Accounts",
+      "description": "Registered user profiles and their synchronized study progress",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User Firebase Auth UID" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "displayName": { "type": "string", "description": "Display name or nickname" },
+        "photoURL": { "type": "string", "description": "Avatar photo URL" },
+        "totalXp": { "type": "number", "description": "Total XP earned across study sessions" },
+        "level": { "type": "number", "description": "User level calculated from XP" },
+        "streakDays": { "type": "number", "description": "Consecutive active study days" },
+        "friends": { "type": "array", "items": { "type": "string" }, "description": "Array of friend user UIDs" },
+        "lastActiveDate": { "type": "string", "description": "Last active timestamp YYYY-MM-DD" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account registration date" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Profile last update timestamp" }
+      },
+      "required": ["uid", "email"]
+    },
+    "study_materials": {
+      "title": "Study Materials & Topics",
+      "description": "Generated and saved study materials, mindmaps, videos, and quizzes for users",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "topic": { "type": "string", "description": "Topic or title of the study material" },
+        "overview": { "type": "string", "description": "Topic summary and definition" },
+        "selectedPassions": { "type": "array", "items": { "type": "string" }, "description": "Passions used for analogies" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of material creation" },
+        "data": { "type": "object", "description": "Complete JSON structure of StudyMaterial" }
+      },
+      "required": ["userId", "topic"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profiles and synced study stats"
+    },
+    "/study_materials/{materialId}": {
+      "schema": "study_materials",
+      "description": "User saved study materials and topics"
+    }
+  }
+}

@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/* 1. Ocultar la raya vertical parpadeante de escritura (caret) en todos los elementos salvo inputs y textareas */
+*:not(input):not(textarea):not([contenteditable="true"]) {
+  caret-color: transparent !important;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  caret-color: auto !important;
+}
+
+/* 2. Evitar que el cursor del ratón se convierta en la raya de texto (I-beam) al hacer clic en títulos, párrafos o tarjetas */
+html,
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+div,
+section,
+header,
+footer,
+article {
+  cursor: default;
+}
+
+/* Mantener el cursor de puntero (mano) en todos los elementos interactivos */
+button,
+a,
+[role="button"],
+.cursor-pointer,
+select,
+summary {
+  cursor: pointer !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Solo los campos de texto reales muestran el cursor de escritura */
+input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+[contenteditable="true"] {
+  cursor: text !important;
+}
+
+/* 3. Evitar contornos y líneas residuales de foco al hacer clic con el ratón */
+*:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+/* 4. Scroll táctil fluido y barras de desplazamiento visibles y estilizadas para tablets y móviles */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.6);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.8);
+}
+
+
