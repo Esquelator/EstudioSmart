@@ -1,7 +1,7 @@
 export interface StudyFile {
   id: string;
   name: string;
-  type: 'image' | 'pdf' | 'text';
+  type: 'image' | 'pdf' | 'text' | 'doc';
   size: number;
   previewUrl?: string;
   base64?: string;

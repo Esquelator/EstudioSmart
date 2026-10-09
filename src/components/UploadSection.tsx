@@ -195,8 +195,14 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   const processFiles = (fileList: File[]) => {
     sounds.playPop();
     fileList.forEach(async (file) => {
-      const isPdf = file.type.includes("pdf") || file.name.toLowerCase().endsWith(".pdf");
-      const isText = file.type.startsWith("text/") || file.name.match(/\.(txt|md|csv|json)$/i);
+      const fname = file.name.toLowerCase();
+      const isPdf = file.type.includes("pdf") || fname.endsWith(".pdf");
+      const isDoc =
+        file.type.includes("word") ||
+        file.type.includes("officedocument") ||
+        fname.endsWith(".docx") ||
+        fname.endsWith(".doc");
+      const isText = file.type.startsWith("text/") || Boolean(fname.match(/\.(txt|md|csv|json)$/i));
       const isImage = file.type.startsWith("image/");
 
       if (isImage) {
@@ -223,9 +229,17 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
               id: "file_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
               name: file.name,
               size: file.size,
-              type: isPdf ? "pdf" : isText ? "text" : "image",
+              type: isPdf ? "pdf" : isDoc ? "doc" : isText ? "text" : "image",
               base64,
-              mimeType: file.type || (isPdf ? "application/pdf" : isText ? "text/plain" : "image/jpeg"),
+              mimeType:
+                file.type ||
+                (isPdf
+                  ? "application/pdf"
+                  : isDoc
+                  ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  : isText
+                  ? "text/plain"
+                  : "image/jpeg"),
             },
           ]);
         };
@@ -548,7 +562,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   multiple
-                  accept="application/pdf,image/*,.txt,.md,.csv,.doc,.docx"
+                  accept="application/pdf,image/*,.txt,.md,.csv,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
                 />
                 <div className="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform shadow-xs">
@@ -558,7 +572,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                   Pulsa aquí para elegir archivos
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  PDFs, fotos (JPG, PNG) o apuntes de texto (TXT, Markdown)
+                  PDFs, documentos Word (.docx, .doc), fotos o apuntes de texto (.txt, .md)
                 </p>
               </div>
 
@@ -577,8 +591,12 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                         <div className="flex items-center gap-2.5 truncate">
                           {file.type === "pdf" ? (
                             <FileText className="w-5 h-5 text-rose-500 shrink-0" />
+                          ) : file.type === "doc" ? (
+                            <FileText className="w-5 h-5 text-blue-600 shrink-0" />
+                          ) : file.type === "text" ? (
+                            <FileText className="w-5 h-5 text-indigo-500 shrink-0" />
                           ) : (
-                            <ImageIcon className="w-5 h-5 text-blue-500 shrink-0" />
+                            <ImageIcon className="w-5 h-5 text-emerald-500 shrink-0" />
                           )}
                           <span className="truncate font-semibold text-slate-800">{file.name}</span>
                         </div>

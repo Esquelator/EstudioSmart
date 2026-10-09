@@ -71,6 +71,40 @@ async function extractTextFromPdf(buffer: Buffer): Promise<{ text: string; numpa
   }
 }
 
+// Deep extraction of Word document text (.docx, .doc) using Mammoth
+async function extractTextFromDoc(buffer: Buffer, fileName: string): Promise<{ text: string }> {
+  try {
+    const mammoth = await import("mammoth");
+    const result = await mammoth.extractRawText({ buffer });
+    const text = (result?.value || "").trim();
+    if (text && text.length > 0) {
+      return { text };
+    }
+  } catch (err: any) {
+    console.warn(`[Mammoth] Could not parse Word document "${fileName}" with mammoth:`, err?.message || err);
+  }
+
+  // Graceful fallback for older binary .doc formats: extract printable text runs
+  try {
+    const rawStr = buffer.toString("latin1");
+    const matches = rawStr.match(/[\x20-\x7E\xA0-\xFF\n\r\t]{4,}/g);
+    if (matches && matches.length > 0) {
+      const extracted = matches
+        .map((s) => s.trim())
+        .filter((s) => s.length > 6 && !s.includes("CompObj") && !s.includes("Root Entry") && !s.startsWith("Microsoft Word"))
+        .join("\n");
+      if (extracted.length > 30) {
+        console.log(`[Document Parser] Extracted ${extracted.length} chars via binary stream fallback for "${fileName}"`);
+        return { text: extracted };
+      }
+    }
+  } catch (fallbackErr) {
+    console.warn(`[Document Parser] Binary text fallback failed for "${fileName}":`, fallbackErr);
+  }
+
+  return { text: "" };
+}
+
 // Resilient helper to handle temporary 503/429 spikes with instant failover and candidate models
 async function generateWithResilience(
   ai: GoogleGenAI,
@@ -326,7 +360,7 @@ app.post("/api/study/analyze", async (req, res) => {
     // Prepare contents parts for Gemini
     const parts: any[] = [];
 
-    // Add files with deep document analysis (PDF text extraction, text files, and images)
+    // Add files with deep document analysis (PDF text extraction, Word documents, text files, and images)
     for (const f of files) {
       if (!f.base64) continue;
       // Strip data:image/...;base64, if included
@@ -334,7 +368,11 @@ app.post("/api/study/analyze", async (req, res) => {
       const mime = (f.mimeType || "").toLowerCase();
       const fname = (f.name || "").toLowerCase();
       const isPdf = mime.includes("pdf") || fname.endsWith(".pdf");
-      const isText = mime.includes("text") || fname.match(/\.(txt|md|csv|json|xml|html)$/i);
+      const isDoc =
+        mime.includes("word") ||
+        mime.includes("officedocument") ||
+        Boolean(fname.match(/\.(docx|doc)$/i));
+      const isText = mime.includes("text") || Boolean(fname.match(/\.(txt|md|csv|json|xml|html)$/i));
 
       if (isPdf) {
         // Deep text extraction tool from PDF
@@ -366,6 +404,29 @@ app.post("/api/study/analyze", async (req, res) => {
             },
           });
         }
+      } else if (isDoc) {
+        // Deep text extraction for Word documents (.docx, .doc) via Mammoth
+        try {
+          const buf = Buffer.from(cleanBase64, "base64");
+          const { text: extractedDocText } = await extractTextFromDoc(buf, f.name);
+          if (extractedDocText && extractedDocText.length > 20) {
+            const trimmed =
+              extractedDocText.length > 25000
+                ? extractedDocText.slice(0, 25000) + "\n...[Fin del extracto principal del documento]"
+                : extractedDocText;
+            console.log(`[Document Parser] Successfully extracted ${trimmed.length} characters from Word document "${f.name}" using mammoth`);
+            parts.push({
+              text: `CONTENIDO TEXTUAL COMPLETO EXTRAÍDO DIRECTAMENTE DEL DOCUMENTO WORD "${f.name}":\n"""\n${trimmed}\n"""\n`,
+            });
+          } else {
+            console.warn(`[Document Parser] Word document "${f.name}" had no readable text.`);
+            parts.push({
+              text: `DOCUMENTO WORD "${f.name}":\n"""\n[Documento Word procesado sin texto extraíble o protegido]\n"""\n`,
+            });
+          }
+        } catch (docErr) {
+          console.warn(`[Document Parser] Error processing Word document ${f.name}:`, docErr);
+        }
       } else if (isText) {
         try {
           const buf = Buffer.from(cleanBase64, "base64");
@@ -382,14 +443,17 @@ app.post("/api/study/analyze", async (req, res) => {
             },
           });
         }
-      } else {
+      } else if (mime.startsWith("image/") || Boolean(fname.match(/\.(jpe?g|png|webp|gif|bmp|heic)$/i))) {
         // Multimodal image (notebook photo, chalkboard, diagrams)
+        const imageMime = mime.startsWith("image/") ? mime : "image/jpeg";
         parts.push({
           inlineData: {
-            mimeType: f.mimeType || "image/jpeg",
+            mimeType: imageMime,
             data: cleanBase64,
           },
         });
+      } else {
+        console.warn(`[Document Parser] Unrecognized file type for "${f.name}" (${f.mimeType}), skipping image fallback.`);
       }
     }
 
